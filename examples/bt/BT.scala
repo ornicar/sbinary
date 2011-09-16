@@ -16,13 +16,13 @@ case class Leaf(label : String) extends BT;
 object MyProtocol extends DefaultProtocol {
 	implicit object BTFormat extends Format[BT]{
 		def reads(in : Input) = read[Byte](in) match {
-			case 0 => Bin(reads(in), reads(in));
+			case 0 => Bin(reads(in), reads(in))
 			case _ => Leaf(read[String](in))
 		}
 
 		def writes(out : Output, value : BT) = value match {
-			case Bin(left, right) => write[Byte](out, 0); writes(out, left); writes(out, right);
-			case Leaf(label) => write[Byte](out, 1); write(out, label);
+			case Bin(left, right) => write[Byte](out, 0); writes(out, left); writes(out, right)
+			case Leaf(label) => write[Byte](out, 1); write(out, label)
 		}
 	}
 }
