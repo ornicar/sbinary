@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+# The mark harrah improvement standard:
+# It's easier to escape death row in texas
+
+[[ -f sbt-launch.jar ]] || {
+  dir=$(mktemp -dt sbinarytest)
+  cd $dir || exit 1
+  echo "Working in $dir."
+
+  echo "Downloading sbt jar ..."
+  wget --quiet http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/0.10.1/sbt-launch.jar
+}
+
+# annoying, how to make sure it's 100% ready to run tests without
+# actually running the tests?
+test-prep () {
+  cat <<EOM
+set testOptions in Test in ThisBuild += Tests.Argument("-s", "$1")
+
++test
+EOM
+}
+run-sbt () {
+  java -XX:MaxPermSize=256M "$@" -jar ../sbt-launch.jar 
+}
+install-build-sbt () {
+  [[ -f build.sbt ]] || cat >build.sbt <<"EOM"
+testOptions in Test in ThisBuild += Tests.Argument("-s", System.getProperty("sbinary.tests"))
+
+parallelExecution in Test in ThisBuild := false
+EOM
+}
+
+setup () {
+  [[ -d sbinary-$1 ]] || {
+    echo "Cloning $1/$2 ..."
+    git clone --quiet git://github.com/$1/sbinary.git sbinary-$1
+  }
+
+  ( cd sbinary-$1 && 
+    git checkout --quiet $2 &&
+    install-build-sbt &&
+    echo "Cross-building $1/$2 ..." &&
+    echo "+test" | run-sbt -Dsbinary.tests=1 >/dev/null 2>&1 &&
+    echo "Complete."
+  )
+}
+
+timed () {
+  echo "Running $2 tests for $1"
+  time ( cd sbinary-$1 && echo "+test" | run-sbt -Dsbinary.tests=$2 |& egrep "(Setting version|Total time:)" )
+  echo ""
+}
+
+setup harrah master
+setup paulp dev
+
+timed harrah 200
+timed paulp 200
+timed harrah 1000
+timed paulp 1000
+timed harrah 2500
+timed paulp 2500
+
+echo "Satisfied?"
+echo "If not, please inquire about our short piers and long walks."
