@@ -4,7 +4,7 @@
 object SBinaryProject extends Build
 {
   lazy val root = (
-    Project("root", file(".")) 
+    Project("root", file("."))
     settings (aux("SBinary Parent") : _*)
     aggregate (core, treeExample)
   )
@@ -23,8 +23,14 @@ object SBinaryProject extends Build
   }
   lazy val coreSettings = template ++ Seq(
     name := "SBinary",
+    organization := "org.scala-tools.sbinary",
+    version := "0.4.1-SNAPSHOT",
     scalaCheck,
-    publishTo := Some("Scala Tools Nexus" at "http://nexus.scala-tools.org/content/repositories/releases/"),
+    publishTo := Some(Resolver.sftp(
+      "iliaz",
+      "scala.iliaz.com"
+    ) as ("scala_iliaz_com", Path.userHome / ".ssh" / "id_rsa")),
+
     credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
     unmanagedResources in Compile <+= baseDirectory map { _ / "LICENSE" }
   )
@@ -43,7 +49,7 @@ object SBinaryProject extends Build
     fmppOptions := "--ignore-temporary-files" :: Nil,
     fullClasspath in fmppConfig <<= update map { _ select configurationFilter(fmppConfig.name) map Attributed.blank }
   )
-    
+
   def fmppConfig(c: Configuration): Seq[Setting[_]] = inConfig(c)(Seq(
     sourceGenerators <+= fmpp.identity,
     fmpp <<= fmppTask,
