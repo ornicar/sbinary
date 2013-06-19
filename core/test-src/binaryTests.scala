@@ -138,7 +138,8 @@ object FormatTests extends Properties("Formats"){
   implicit def arbitraryArray[T](implicit arb : Arbitrary[T], mf: ClassManifest[T]) : Arbitrary[Array[T]] =
      Arbitrary(arbitrary[List[T]].map((x : List[T]) => x.toArray[T]))
 
-  implicit val arbitraryEnumeration : Arbitrary[Enumeration] = Arbitrary(arbitrary[List[String]].map(x => new Enumeration(x : _*){}))
+  // implicit val arbitraryEnumeration : Arbitrary[Enumeration] = 
+  //   Arbitrary(arbitrary[List[String]].map(x => new Enumeration(x : _*){}))
 
   implicit def orderedOption[T](opt : Option[T])(implicit ord : Ordering[T]) : Ordered[Option[T]] = new Ordered[Option[T]]{
     def compare(that : Option[T]) = (opt, that) match {
@@ -170,12 +171,12 @@ object FormatTests extends Properties("Formats"){
 
   sealed abstract class BinaryTree;
   case class Split(left : BinaryTree, right : BinaryTree) extends BinaryTree;
-  case class Leaf extends BinaryTree;
+  case class Leaf(uh: Unit) extends BinaryTree;
 
   implicit val eqBinaryTree = allAreEqual[BinaryTree]
 
   implicit val BinaryTreeIsFormat : Format[BinaryTree] = lazyFormat({
-    implicit val formatLeaf = asSingleton(Leaf())
+    implicit val formatLeaf = asSingleton(Leaf(()))
 
     implicit val formatSplit : Format[Split] = asProduct2((x : BinaryTree, y : BinaryTree) => Split(x, y))((s : Split) => (s.left, s.right))
     asUnion[BinaryTree](classOf[Leaf], classOf[Split])
@@ -183,7 +184,7 @@ object FormatTests extends Properties("Formats"){
 
   implicit val arbitraryTree : Arbitrary[BinaryTree] = {
     def sizedArbitraryTree(n : Int) : Gen[BinaryTree] = 
-      if (n <= 1) value(Leaf())
+      if (n <= 1) value(Leaf(()))
       else for (i <- choose(1, n - 1);
                 left <- sizedArbitraryTree(i);
                 right <- sizedArbitraryTree(n - i)
